@@ -8,7 +8,7 @@ This is a simple batch file renaming utility written in Python. You can install 
 
 `pip install batchfilename`
 
-## How to used
+## How to use
 
 Run using the command `batchfilename`. A window with two panes will appear. Select the folder where the files are to rename. You can then select the symbols to find and replace with which will be applied to all files. Always use 'preview' first to check the results before executing. Some file name changes might not be reversible. The 'occurences' option allows you to only replace a specific number of instances of a symbol in the name.
 
