@@ -12,6 +12,10 @@ Install from github:
 
 ```pip install -e git+https://github.com/dmnfarrell/batchfilename.git#egg=batchfilename```
 
+Install snap:
+
+```snap install batchfilename```
+
 ## How to use
 
 Run using the command `batchfilename`. A window with two panes will appear. Select the folder where the files are to be renamed. On the left the files will be listed and on the right a preview of the renamed files is shown (without full path for ease of viewing). You can then select the symbols to find and replace with, which will be applied to all files. Filter the files to be renamed if needed, `*.*` means all files. **Always use 'preview'** first to check the results before executing as some file name changes might not be reversible. Though you should be able to reverse the last run using the undo button.
