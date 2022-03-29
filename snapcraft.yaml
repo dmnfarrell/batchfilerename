@@ -7,27 +7,20 @@ description: |
 base: core18
 grade: stable
 confinement: strict
-icon: img/logo.png
+icon: batchfilerename/img/logo.png
 
 apps:
-  dataexplore:
+  batchfilerename:
     command: desktop-launch $SNAP/bin/batchfilerename
     plugs: [desktop,desktop-legacy,unity7,home]
 
 parts:
-  dataexplore:
+  batchfilerename:
     plugin: python
     source: .
     stage-packages:
-      [python3-tk]
+      [python3-tk,fontconfig-config,fonts-dejavu-extra]
     after: [desktop-glib-only]
-
-  files: #to deal with problem finding init.tcl
-    plugin: dump
-    source: /usr/share/tcltk
-    source-type: local
-    organize:
-       'tcl8.6' : usr/lib/
 
   desktop-glib-only:
       source: https://github.com/ubuntu/snapcraft-desktop-helpers.git
@@ -37,3 +30,9 @@ parts:
         - libglib2.0-dev
       stage-packages:
         - libglib2.0-bin
+
+layout:
+  /usr/share/tcltk:
+    bind: $SNAP/usr/share/tcltk
+  /usr/lib/tcltk:
+    bind: $SNAP/usr/lib/tcltk

@@ -56,8 +56,15 @@ class BatchRenameApp(Frame):
         w = 900; h=600
         x = (ws/2)-(w/2); y = (hs/2)-(h/2)
         self.main.geometry('%dx%d+%d+%d' % (w,h,x,y))
+
+        self.modulepath = os.path.dirname(__file__)
+        icon = os.path.join(self.modulepath,'img','logo.gif')
+        img = PhotoImage(file=icon)
+        self.main.tk.call('wm', 'iconphoto', self.main._w, img)
+
         self.doGUI()
         self.currentdir = os.path.expanduser('~')
+        self.mapping = {}
         return
 
     def doGUI(self):
@@ -77,6 +84,9 @@ class BatchRenameApp(Frame):
         b=Button(fr,text='Clear',command=self.clear)
         b.pack(side=TOP,fill=BOTH,pady=2)
 
+        v = self.recursivevar = IntVar()
+        self.recursbutton = Checkbutton(fr, text='recursive folders', variable=v)
+        self.recursbutton.pack(side=TOP,fill=BOTH,pady=2)
         self.patternvar = StringVar()
         self.patternvar.set('*.*')
         self.filepattern = Entry(fr, textvariable=self.patternvar)
@@ -101,13 +111,15 @@ class BatchRenameApp(Frame):
 
         b=Button(fr,text='Preview',command=self.dopreview)
         b.pack(side=TOP,fill=BOTH,pady=2)
+        b=Button(fr,text='Undo',command=self.undo)
+        b.pack(side=TOP,fill=BOTH,pady=2)
         b=Button(fr,text='Execute',command=self.execute)
         b.pack(side=TOP,fill=BOTH,pady=2)
         fr.pack(side=LEFT,fill=BOTH)
         return
 
     def on_scrollbar(self, *args):
-        '''Scrolls both text widgets when the scrollbar is moved'''
+        """Scrolls both text widgets when the scrollbar is moved"""
 
         self.fileslist.yview(*args)
         self.preview.yview(*args)
@@ -131,7 +143,11 @@ class BatchRenameApp(Frame):
 
         self.fileslist.delete('1.0',END)
         fp = self.patternvar.get()
-        flist = glob.glob(os.path.join(self.path,fp))
+        recursive = self.recursivevar.get()
+        if recursive == 0:
+            flist = glob.glob(os.path.join(self.path,fp))
+        else:
+            flist =  glob.glob(os.path.join(self.path,'**/'+fp), recursive=True)
         filestr = '\n'.join(flist)
         self.fileslist.insert(END, filestr)
         return
@@ -147,7 +163,7 @@ class BatchRenameApp(Frame):
         repl = self.replacevar.get()
         occ = self.occurencesvar.get()
         if occ == 0: occ = None
-        new = doFindReplace(files=flist, find=find, replace=repl, occ=occ)
+        new = self.doFindReplace(files=flist, find=find, replace=repl, occ=occ)
         new = '\n'.join(new)
         self.preview.insert(END,new)
         return
@@ -172,30 +188,50 @@ class BatchRenameApp(Frame):
         repl = self.replacevar.get()
         occ = self.occurencesvar.get()
         if occ == 0: occ = None
-        doFindReplace(files=flist, find=find, replace=repl, rename=True, occ=occ)
+        self.doFindReplace(files=flist, find=find, replace=repl, rename=True, occ=occ)
         self.refresh()
         return
 
-def doFindReplace(files=None, wildcard=None, find='', replace='', rename=False, occ=None):
-    """Find replace method"""
+    def doFindReplace(self, files=None, wildcard=None, find='', replace='', rename=False, occ=None):
+        """Find replace method"""
 
-    newfiles = []
-    if files==None:
-        files = glob.glob(wildcard)
-    for pathname in files:
-        basename= os.path.basename(pathname)
-        if occ != None:
-            new_filename = basename.replace(find,replace,occ)
-        else:
-            new_filename = basename.replace(find,replace)
-        newfiles.append(new_filename)
-        if new_filename != basename:
+        newfiles = []
+        mapping = {} #keep a mapping for undo
+        if files==None:
+            files = glob.glob(wildcard)
+        for pathname in files:
+            basename = os.path.basename(pathname)
+            if occ != None:
+                new_filename = basename.replace(find,replace,occ)
+            else:
+                new_filename = basename.replace(find,replace)
+            newfiles.append(new_filename)
+            target = os.path.join(os.path.dirname(pathname), new_filename)
+            mapping[target] = pathname
+            if new_filename != basename:
+                if rename == True:
+                    os.rename(pathname, target)
+        if '' in mapping:
+            del mapping['']
+        if rename == True:
+            self.mapping = mapping
+        return newfiles
 
-            if rename == True:
-                os.rename(pathname,
-                          os.path.join(os.path.dirname(pathname),
-                          new_filename))
-    return newfiles
+    def undo(self):
+        """Undo last rename"""
+
+        if len(self.mapping) == 0:
+            return
+        n = messagebox.askyesno("Undo",
+                                 "Undo last operation?",
+                                 parent=self.master)
+        if not n:
+            return
+        for f in self.mapping:
+            os.rename(f, self.mapping[f])
+        self.mapping = {}
+        self.refresh()
+        return
 
 def randomFiles():
     """Create random empty files"""
